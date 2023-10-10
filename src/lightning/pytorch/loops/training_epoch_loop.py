@@ -77,6 +77,7 @@ class _TrainingEpochLoop(loops._Loop):
         self._results = _ResultCollection(training=True)
         self._warning_cache = WarningCache()
         self._batches_that_stepped: int = 0
+        self.extra_profiler = None
 
     @property
     def total_batch_idx(self) -> int:
@@ -266,6 +267,8 @@ class _TrainingEpochLoop(loops._Loop):
         # SAVE METRICS TO LOGGERS AND PROGRESS_BAR
         # -----------------------------------------
         trainer._logger_connector.update_train_step_metrics()
+        if self.extra_profiler is not None:
+            self.extra_profiler.step()
 
     def on_advance_end(self, data_fetcher: _DataFetcher) -> None:
         # -----------------------------------------

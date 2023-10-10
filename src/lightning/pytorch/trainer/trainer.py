@@ -1029,8 +1029,27 @@ class Trainer:
         if self.training:
             with isolate_rng():
                 self._run_sanity_check()
+
+            profiler_data_dir = os.getenv("PROFILER_DATA_DIR")
+            if profiler_data_dir is not None:
+                profiler = torch.profiler.profile(
+                    activities=[
+                        torch.profiler.ProfilerActivity.CPU,
+                        torch.profiler.ProfilerActivity.CUDA
+                    ],
+                    schedule=torch.profiler.schedule(wait=10, warmup=5, active=5, repeat=1),
+                    on_trace_ready=torch.profiler.tensorboard_trace_handler(profiler_data_dir),
+                    record_shapes=True,
+                )
+                profiler.start()
+                self.fit_loop.epoch_loop.extra_profiler = profiler
+
             with torch.autograd.set_detect_anomaly(self._detect_anomaly):
                 self.fit_loop.run()
+
+            if profiler_data_dir is not None:
+                profiler.stop()
+
             return None
         raise RuntimeError(f"Unexpected state {self.state}")
 
